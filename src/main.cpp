@@ -19,6 +19,18 @@ void macToString(const uint8_t *mac, char *macStr)
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
+String simpleHash(String input)
+{
+  unsigned long hash = 5381;
+
+  for (int i = 0; i < input.length(); i++)
+  {
+    hash = ((hash << 5) + hash) + input[i];
+  }
+
+  return String(hash, HEX);
+}
+
 bool shouldPrint(String id)
 {
   unsigned long now = millis();
@@ -60,16 +72,17 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
   char macStr[18];
   macToString(mac, macStr);
 
-  String id = String(macStr);
+  String rawMac = String(macStr);
+  String hashedId = simpleHash(rawMac);
 
-  if (!shouldPrint(id))
+  if (!shouldPrint(hashedId))
   {
     return;
   }
 
   String json =
     "{"
-    "\"id\":\"" + id + "\","
+    "\"id\":\"" + hashedId + "\","
     "\"timestamp\":" + String(timestamp) + ","
     "\"rssi\":" + String(rssi) + ","
     "\"x\":0,"
@@ -84,7 +97,7 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("WiFi sniffer JSON med filter startet");
+  Serial.println("WiFi sniffer JSON med hashed ID startet");
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
