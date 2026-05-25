@@ -2,10 +2,49 @@
 #include <WiFi.h>
 #include "esp_wifi.h"
 
+struct DeviceSeen
+{
+  String id;
+  unsigned long lastSeen;
+};
+
+DeviceSeen devices[50];
+int deviceCount = 0;
+
+const unsigned long PRINT_INTERVAL = 5000;
+
 void macToString(const uint8_t *mac, char *macStr)
 {
   snprintf(macStr, 18, "%02X:%02X:%02X:%02X:%02X:%02X",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
+bool shouldPrint(String id)
+{
+  unsigned long now = millis();
+
+  for (int i = 0; i < deviceCount; i++)
+  {
+    if (devices[i].id == id)
+    {
+      if (now - devices[i].lastSeen >= PRINT_INTERVAL)
+      {
+        devices[i].lastSeen = now;
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  if (deviceCount < 50)
+  {
+    devices[deviceCount].id = id;
+    devices[deviceCount].lastSeen = now;
+    deviceCount++;
+  }
+
+  return true;
 }
 
 void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
@@ -21,9 +60,16 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
   char macStr[18];
   macToString(mac, macStr);
 
+  String id = String(macStr);
+
+  if (!shouldPrint(id))
+  {
+    return;
+  }
+
   String json =
     "{"
-    "\"id\":\"" + String(macStr) + "\","
+    "\"id\":\"" + id + "\","
     "\"timestamp\":" + String(timestamp) + ","
     "\"rssi\":" + String(rssi) + ","
     "\"x\":0,"
@@ -38,7 +84,7 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("WiFi sniffer JSON prototype startet");
+  Serial.println("WiFi sniffer JSON med filter startet");
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
