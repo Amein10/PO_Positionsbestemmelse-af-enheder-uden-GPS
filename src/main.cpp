@@ -1,24 +1,31 @@
 #include <Arduino.h>
 #include "WiFi.h"
+#include "esp_wifi.h"
 
-void setup() {
-  Serial.begin(115200);
+void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
+{
+  wifi_promiscuous_pkt_t *pkt = (wifi_promiscuous_pkt_t*)buff;
 
-  WiFi.mode(WIFI_MODE_STA);
-  WiFi.disconnect();
+  int rssi = pkt->rx_ctrl.rssi;
 
-  delay(1000);
-
-  Serial.println("Scanning...");
-
-  int networks = WiFi.scanNetworks();
-
-  for (int i = 0; i < networks; i++) {
-    Serial.print(WiFi.SSID(i));
-    Serial.print(" RSSI: ");
-    Serial.println(WiFi.RSSI(i));
-  }
+  Serial.print("RSSI: ");
+  Serial.println(rssi);
 }
 
-void loop() {
+void setup()
+{
+  Serial.begin(115200);
+  delay(1000);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_promiscuous_rx_cb(&wifi_sniffer_packet_handler);
+
+  Serial.println("WiFi Sniffer Started");
+}
+
+void loop()
+{
 }
