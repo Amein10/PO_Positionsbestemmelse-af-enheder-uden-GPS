@@ -97,7 +97,7 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("WiFi sniffer JSON med hashed ID startet");
+  Serial.println("WiFi sniffer med hashed ID og tæller startet");
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
@@ -108,4 +108,13 @@ void setup()
 
 void loop()
 {
+  static unsigned long lastCountPrint = 0;
+
+  if (millis() - lastCountPrint >= 10000)
+  {
+    lastCountPrint = millis();
+
+    Serial.print("Antal unikke enheder set: ");
+    Serial.println(deviceCount);
+  }
 }
