@@ -9,6 +9,12 @@ struct DeviceSeen
   unsigned long lastSeen;
 };
 
+struct Point
+{
+  float x;
+  float y;
+};
+
 DeviceSeen devices[50];
 int deviceCount = 0;
 
@@ -38,6 +44,37 @@ float estimateDistance(int rssi)
   float n = 2.0;
 
   return pow(10, ((txPower - rssi) / (10.0 * n)));
+}
+
+Point trilaterate(
+  float x1, float y1, float r1,
+  float x2, float y2, float r2,
+  float x3, float y3, float r3
+)
+{
+  float A = 2 * (x2 - x1);
+  float B = 2 * (y2 - y1);
+  float C = r1 * r1 - r2 * r2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2;
+
+  float D = 2 * (x3 - x1);
+  float E = 2 * (y3 - y1);
+  float F = r1 * r1 - r3 * r3 - x1 * x1 + x3 * x3 - y1 * y1 + y3 * y3;
+
+  Point p;
+
+  float denominator = A * E - B * D;
+
+  if (denominator == 0)
+  {
+    p.x = 0;
+    p.y = 0;
+    return p;
+  }
+
+  p.x = (C * E - B * F) / denominator;
+  p.y = (A * F - C * D) / denominator;
+
+  return p;
 }
 
 bool shouldPrint(String id)
@@ -75,7 +112,17 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
   int rssi = pkt->rx_ctrl.rssi;
   unsigned long timestamp = millis();
 
-  float distance = estimateDistance(rssi);
+  float d1 = estimateDistance(rssi);
+
+  // Simulerede afstande fra to ekstra ESP32-stationer
+  float d2 = d1 + 1.5;
+  float d3 = d1 + 2.0;
+
+  Point position = trilaterate(
+    0, 0, d1,
+    5, 0, d2,
+    0, 5, d3
+  );
 
   uint8_t *payload = pkt->payload;
   uint8_t *mac = payload + 10;
@@ -96,9 +143,9 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
     "\"id\":\"" + hashedId + "\","
     "\"timestamp\":" + String(timestamp) + ","
     "\"rssi\":" + String(rssi) + ","
-    "\"distance\":" + String(distance, 2) + ","
-    "\"x\":0,"
-    "\"y\":0"
+    "\"distance\":" + String(d1, 2) + ","
+    "\"x\":" + String(position.x, 2) + ","
+    "\"y\":" + String(position.y, 2) +
     "}";
 
   Serial.println(json);
@@ -109,7 +156,7 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("WiFi sniffer med afstandsberegning startet");
+  Serial.println("WiFi sniffer med simuleret trilateration startet");
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
