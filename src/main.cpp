@@ -1,18 +1,24 @@
-#include <Arduino.h>
-
-// put function declarations here:
-int myFunction(int, int);
+// #include <Arduino.h>
+#include "WiFi.h"
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_MODE_STA);
+  WiFi.disconnect();
+
+  delay(1000);
+
+  Serial.println("Scanning...");
+
+  int networks = WiFi.scanNetworks();
+
+  for (int i = 0; i < networks; i++) {
+    Serial.print(WiFi.SSID(i));
+    Serial.print(" RSSI: ");
+    Serial.println(WiFi.RSSI(i));
+  }
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
