@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "esp_wifi.h"
+#include <math.h>
 
 struct DeviceSeen
 {
@@ -29,6 +30,14 @@ String simpleHash(String input)
   }
 
   return String(hash, HEX);
+}
+
+float estimateDistance(int rssi)
+{
+  int txPower = -59;
+  float n = 2.0;
+
+  return pow(10, ((txPower - rssi) / (10.0 * n)));
 }
 
 bool shouldPrint(String id)
@@ -66,6 +75,8 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
   int rssi = pkt->rx_ctrl.rssi;
   unsigned long timestamp = millis();
 
+  float distance = estimateDistance(rssi);
+
   uint8_t *payload = pkt->payload;
   uint8_t *mac = payload + 10;
 
@@ -85,6 +96,7 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type)
     "\"id\":\"" + hashedId + "\","
     "\"timestamp\":" + String(timestamp) + ","
     "\"rssi\":" + String(rssi) + ","
+    "\"distance\":" + String(distance, 2) + ","
     "\"x\":0,"
     "\"y\":0"
     "}";
@@ -97,7 +109,7 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("WiFi sniffer med hashed ID og tæller startet");
+  Serial.println("WiFi sniffer med afstandsberegning startet");
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
