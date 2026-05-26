@@ -16,6 +16,11 @@ const char* mqtt_user = "user11";
 const char* mqtt_password = "fZ4J5sjH";
 const char* mqtt_topic = "/users/user11/position";
 
+// ---------- NODE CONFIG ----------
+// Skift navn for hver ESP32
+
+const char* node_id = "ESP32_A";
+
 // CA certificate
 const char MQTT_CA_CERT[] = R"(
 -----BEGIN CERTIFICATE-----
@@ -228,6 +233,7 @@ void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type) {
   String json =
     "{"
     "\"user\":\"user11\","
+    "\"node\":\"" + String(node_id) + "\","
     "\"id\":\"" + hashedId + "\","
     "\"timestamp\":" + String(timestamp) + ","
     "\"rssi\":" + String(rssi) + ","
