@@ -14,7 +14,7 @@ const char* mqtt_server = "192.168.0.161";
 const int mqtt_port = 8883;
 const char* mqtt_user = "user11";
 const char* mqtt_password = "fZ4J5sjH";
-const char* mqtt_topic = "/users/user11/position";
+const char* mqtt_base_topic = "/users/user11/position";
 
 // ---------- NODE CONFIG ----------
 // Skift navn for hver ESP32
@@ -186,14 +186,16 @@ void publishPosition(String payload) {
 
   mqttClient.loop();
 
-  Serial.print("Sender MQTT: ");
+  String topic = String(mqtt_base_topic) + "/" + String(node_id);
+
+  Serial.print("Sender MQTT til topic: ");
+  Serial.println(topic);
   Serial.println(payload);
 
-  bool sent = mqttClient.publish(mqtt_topic, payload.c_str());
+  bool sent = mqttClient.publish(topic.c_str(), payload.c_str());
 
   if (sent) {
-    Serial.print("MQTT besked sendt til topic: ");
-    Serial.println(mqtt_topic);
+    Serial.println("MQTT besked sendt");
   } else {
     Serial.println("MQTT besked fejlede");
   }
